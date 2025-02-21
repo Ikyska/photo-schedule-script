@@ -1,26 +1,83 @@
 console.log("Скрипт успешно подключен с GitHub!");
 
-// Открытие модального окна
-window.openScheduleForm = function() {
-    console.log("Открытие формы расписания");
+// Глобальные переменные
+window.records = [];
+window.editingIndex = -1;
 
-    // Открытие диалогового окна через jQuery UI
-    $("#dialog-form").dialog({
-        autoOpen: true,
+// Открытие формы
+window.openScheduleForm = function(existingData = "") {
+    console.log("Открытие формы расписания");
+    
+    // Обработка существующих данных
+    window.records = existingData ? existingData.split('\n').map(line => {
+        const [name, time, workTypes, status] = line.split(' | ');
+        return { name, time, workTypes: workTypes.split(','), status };
+    }) : [];
+    
+    // Отображение существующих записей
+    renderRecords();
+
+    // Открытие модального окна
+    $("#recordsContainer").dialog({
         modal: true,
-        width: 500,
+        width: 600,
         buttons: {
-            "Сохранить": function() {
-                window.saveRecord();
+            "Добавить новую запись": function() {
+                window.editingIndex = -1;
+                $("#dialog-form").dialog("open");
+            },
+            "Сохранить все данные": function() {
+                google.script.run.saveScheduleData({ records: window.records });
+                google.script.host.close();
             },
             "Отмена": function() {
-                $(this).dialog("close");
+                google.script.host.close();
             }
         }
     });
 };
 
-// Сохранение данных из формы
+// Отображение списка записей
+function renderRecords() {
+    const container = $('#recordsContainer');
+    container.empty();
+
+    window.records.forEach((record, index) => {
+        container.append(`
+            <div class="record-card">
+                <strong>Имя:</strong> ${record.name}<br>
+                <strong>Время:</strong> ${record.time}<br>
+                <strong>Тип работы:</strong> ${record.workTypes.join(', ')}<br>
+                <strong>Статус:</strong> ${record.status}<br>
+                <button onclick="window.editRecord(${index})">✏️ Редактировать</button>
+                <button onclick="window.deleteRecord(${index})">❌ Удалить</button>
+            </div>
+        `);
+    });
+}
+
+// Открытие формы для редактирования
+window.editRecord = function(index) {
+    const record = window.records[index];
+    window.editingIndex = index;
+
+    $('#name').val(record.name);
+    $('#time').val(record.time);
+    $('input[type=checkbox]').each(function() {
+        $(this).prop('checked', record.workTypes.includes($(this).val()));
+    });
+    $('input[name="status"][value="'+record.status+'"]').prop('checked', true);
+
+    $("#dialog-form").dialog("open");
+};
+
+// Удаление записи
+window.deleteRecord = function(index) {
+    window.records.splice(index, 1);
+    renderRecords();
+};
+
+// Сохранение новой или отредактированной записи
 window.saveRecord = function() {
     const record = {
         name: $('#name').val(),
@@ -28,17 +85,13 @@ window.saveRecord = function() {
         workTypes: $('input[type=checkbox]:checked').map((_, el) => el.value).get(),
         status: $('input[name="status"]:checked').val()
     };
-    console.log("Сохранение записи:", record);
 
-    // Передача данных в Google Apps Script
-    google.script.run.saveScheduleData({ records: [record] });
+    if (window.editingIndex > -1) {
+        window.records[window.editingIndex] = record;
+    } else {
+        window.records.push(record);
+    }
 
-    // Закрытие диалогового окна
-    $("#dialog-form").dialog("close");
+    $('#dialog-form').dialog("close");
+    renderRecords();
 };
-
-// Проверка работы функций через консоль
-console.log("Доступные функции:", {
-    openScheduleForm: window.openScheduleForm,
-    saveRecord: window.saveRecord
-});

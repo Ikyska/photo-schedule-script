@@ -1,5 +1,6 @@
 console.log("Скрипт успешно подключен с GitHub!");
 
+// Открытие модального окна
 window.openScheduleForm = function() {
     console.log("Открытие формы расписания");
 
@@ -19,6 +20,7 @@ window.openScheduleForm = function() {
     });
 };
 
+// Сохранение данных из формы
 window.saveRecord = function() {
     const record = {
         name: $('#name').val(),

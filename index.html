@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Расписание фотографов</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h3>Расписание фотографов</h3>
+    <div id="recordsContainer" title="Записи фотографов" style="display:none;"></div>
+
+    <div id="dialog-form" title="Добавить/Редактировать запись" style="display:none;">
+        <label>Имя фотографа:</label><br>
+        <input type="text" id="name" placeholder="Введите имя"><br><br>
+        
+        <label>Время:</label><br>
+        <select id="time">
+            ${[...Array(12)].map((_, i) => `<option>${10 + i}:00</option>`).join('')}
+        </select><br><br>
+        
+        <label>Тип работы:</label><br>
+        <input type="checkbox" id="photo" value="Фото"> Фото
+        <input type="checkbox" id="video" value="Видео"> Видео
+        <input type="checkbox" id="package" value="Пакет"> Пакет<br><br>
+        
+        <label>Статус:</label><br>
+        <input type="radio" name="status" value="Принят"> Принят<br>
+        <input type="radio" name="status" value="Фотограф установлен"> Фотограф установлен<br>
+        <input type="radio" name="status" value="Работа сдана"> Работа сдана<br>
+        <input type="radio" name="status" value="Работа оплачена"> Работа оплачена<br><br>
+        
+        <button onclick="saveRecord()">💾 Сохранить</button>
+        <button onclick="$('#dialog-form').dialog('close')">🚫 Отмена</button>
+    </div>
+</body>
+</html>

@@ -19,7 +19,6 @@ window.openScheduleForm = function() {
     });
 };
 
-// Сохранение данных из формы
 window.saveRecord = function() {
     const record = {
         name: $('#name').val(),

@@ -1,6 +1,5 @@
 console.log("Скрипт успешно подключен с GitHub!");
 
-// Открытие модального окна
 window.openScheduleForm = function() {
     console.log("Открытие формы расписания");
 

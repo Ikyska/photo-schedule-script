@@ -1,39 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Расписание фотографов</title>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8">
+  <title>Расписание фотографов</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .entry { padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; }
+    button { margin-right: 5px; }
+  </style>
 </head>
 <body>
-    <h3>Расписание фотографов</h3>
-    <div id="recordsContainer" title="Записи фотографов" style="display:none;"></div>
-
-    <div id="dialog-form" title="Добавить/Редактировать запись" style="display:none;">
-        <label>Имя фотографа:</label><br>
-        <input type="text" id="name" placeholder="Введите имя"><br><br>
-        
-        <label>Время:</label><br>
-        <select id="time">
-            ${[...Array(12)].map((_, i) => `<option>${10 + i}:00</option>`).join('')}
-        </select><br><br>
-        
-        <label>Тип работы:</label><br>
-        <input type="checkbox" id="photo" value="Фото"> Фото
-        <input type="checkbox" id="video" value="Видео"> Видео
-        <input type="checkbox" id="package" value="Пакет"> Пакет<br><br>
-        
-        <label>Статус:</label><br>
-        <input type="radio" name="status" value="Принят"> Принят<br>
-        <input type="radio" name="status" value="Фотограф установлен"> Фотограф установлен<br>
-        <input type="radio" name="status" value="Работа сдана"> Работа сдана<br>
-        <input type="radio" name="status" value="Работа оплачена"> Работа оплачена<br><br>
-        
-        <button onclick="saveRecord()">💾 Сохранить</button>
-        <button onclick="$('#dialog-form').dialog('close')">🚫 Отмена</button>
-    </div>
+  <h1>Расписание фотографов</h1>
+  <div>
+    <label for="dateInput">Дата (формат: YYYY-MM-DD):</label>
+    <input type="text" id="dateInput" value="2023-02-22">
+    <label for="parkInput">Парк:</label>
+    <input type="text" id="parkInput" value="Park A">
+    <button id="loadBtn">Загрузить расписание</button>
+  </div>
+  <div id="scheduleContainer"></div>
+  <button id="addEntryBtn">Добавить запись</button>
+  
+  <script>
+    // URL вашего развернутого веб-приложения Google Apps Script
+    const apiUrl = 'https://script.google.com/macros/s/ВАШ_ID/exec'; // Замените на свой URL
+    const sheetName = 'Schedule';
+    
+    // Получение записей
+    async function fetchSchedule(date, park) {
+      const url = `${apiUrl}?action=read&date=${encodeURIComponent(date)}&park=${encodeURIComponent(park)}&sheet=${sheetName}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.entries || [];
+    }
+    
+    // Обновление данных (add, edit, delete)
+    async function updateSchedule(action, payload) {
+      payload.action = action;
+      payload.sheet = sheetName;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      return data.entries || [];
+    }
+    
+    // Отрисовка списка записей
+    function renderSchedule(entries) {
+      const container = document.getElementById('scheduleContainer');
+      container.innerHTML = '';
+      entries.forEach((entry, index) => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `
+          <strong>Фотограф:</strong> ${entry.name}<br>
+          <strong>Время:</strong> ${entry.time}<br>
+          <strong>Тип работ:</strong> ${entry.workType}<br>
+          <strong>Статус:</strong> ${entry.status}<br>
+          <button onclick="editEntry(${index})">Редактировать</button>
+          <button onclick="deleteEntry(${index})">Удалить</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+    
+    // Загрузка записей по введённым дате и парку
+    async function loadSchedule() {
+      const date = document.getElementById('dateInput').value;
+      const park = document.getElementById('parkInput').value;
+      const entries = await fetchSchedule(date, park);
+      renderSchedule(entries);
+      // Сохраняем текущие значения для операций редактирования/удаления
+      window.currentDate = date;
+      window.currentPark = park;
+    }
+    
+    // Функция редактирования записи
+    async function editEntry(index) {
+      const entries = await fetchSchedule(window.currentDate, window.currentPark);
+      const entry = entries[index];
+      const newName = prompt('Новое имя фотографа:', entry.name);
+      const newTime = prompt('Новое время брони:', entry.time);
+      const newWorkType = prompt('Новый тип работ:', entry.workType);
+      const newStatus = prompt('Новый статус:', entry.status);
+      if (newName && newTime && newWorkType && newStatus) {
+        const updatedEntry = {
+          name: newName,
+          time: newTime,
+          workType: newWorkType,
+          status: newStatus
+        };
+        await updateSchedule('edit', { date: window.currentDate, park: window.currentPark, index: index, updatedEntry: updatedEntry });
+        loadSchedule();
+      }
+    }
+    
+    // Функция удаления записи
+    async function deleteEntry(index) {
+      if (confirm('Удалить запись?')) {
+        await updateSchedule('delete', { date: window.currentDate, park: window.currentPark, index: index });
+        loadSchedule();
+      }
+    }
+    
+    // Обработчик добавления новой записи
+    document.getElementById('addEntryBtn').addEventListener('click', async () => {
+      const name = prompt('Имя фотографа:');
+      const time = prompt('Время брони:');
+      const workType = prompt('Тип работ:');
+      const status = prompt('Статус:');
+      if (name && time && workType && status) {
+        const newEntry = { name, time, workType, status };
+        await updateSchedule('add', { date: window.currentDate, park: window.currentPark, newEntry: newEntry });
+        loadSchedule();
+      }
+    });
+    
+    document.getElementById('loadBtn').addEventListener('click', loadSchedule);
+    
+    // Первая загрузка
+    loadSchedule();
+    
+    // Делаем функции доступными глобально для вызова из HTML
+    window.editEntry = editEntry;
+    window.deleteEntry = deleteEntry;
+  </script>
 </body>
 </html>

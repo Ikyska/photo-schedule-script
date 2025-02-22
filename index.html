@@ -23,12 +23,11 @@
   
   <script>
     // URL вашего развернутого веб-приложения Google Apps Script
-    const apiUrl = 'https://script.google.com/macros/s/ВАШ_ID/exec'; // Замените на свой URL
-    const sheetName = 'Schedule';
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbwq9zJZ6bAipaQHbALeukeE97ElX62Rdt95YfAYP92fLI-BI2NjYhGpX0qwVWO7fOPz/exec';
     
     // Получение записей
     async function fetchSchedule(date, park) {
-      const url = `${apiUrl}?action=read&date=${encodeURIComponent(date)}&park=${encodeURIComponent(park)}&sheet=${sheetName}`;
+      const url = `${apiUrl}?action=read&date=${encodeURIComponent(date)}&park=${encodeURIComponent(park)}`;
       const response = await fetch(url);
       const data = await response.json();
       return data.entries || [];
@@ -37,7 +36,6 @@
     // Обновление данных (add, edit, delete)
     async function updateSchedule(action, payload) {
       payload.action = action;
-      payload.sheet = sheetName;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,7 +70,7 @@
       const park = document.getElementById('parkInput').value;
       const entries = await fetchSchedule(date, park);
       renderSchedule(entries);
-      // Сохраняем текущие значения для операций редактирования/удаления
+      // Сохраняем текущие значения для последующих операций
       window.currentDate = date;
       window.currentPark = park;
     }
